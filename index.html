@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Forum | Acceso</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg-ivory: #FDFCF0;
+            --panel-beige: #F2E8CF;
+            --accent-terracotta: #BC6C25;
+            --text-dark: #283618;
+            --input-bg: #FFFFFF;
+            --bubble-bg: #ffffff;
+            --aluminum-grey: #A9ACB6; /* Color Gris Aluminio solicitado */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            height: 100%;
+            /* Se cambió el fondo al color Gris Aluminio solicitado */
+            background: var(--aluminum-grey); 
+            color: var(--text-dark);
+        }
+
+        /* Si prefieres mantener el degradado pero con el gris, usa esta línea en su lugar:
+           background: linear-gradient(-45deg, #A9ACB6, #F2E8CF, #D1D4D9, #FEFAE0); 
+        */
+
+        .logo-box {
+            border: 2px solid var(--accent-terracotta);
+            padding: 10px 25px;
+            display: inline-block;
+            margin-bottom: 25px;
+            letter-spacing: 5px;
+            font-weight: 400;
+            font-size: 24px;
+            color: var(--accent-terracotta);
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        #entry-page {
+            display: flex;
+            justify-content: center; align-items: center;
+            min-height: 100vh; padding: 20px; transition: opacity 0.5s;
+        }
+
+        .auth-card {
+            background: var(--panel-beige);
+            padding: 45px;
+            border-radius: 8px; box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            max-width: 450px; width: 100%; text-align: center;
+            border: 1px solid rgba(188, 108, 37, 0.2);
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 15px; margin: 8px 0;
+            background: var(--input-bg); border: 1px solid #DDA15E;
+            color: var(--text-dark); border-radius: 4px; box-sizing: border-box;
+            transition: 0.3s;
+            font-family: inherit;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px; margin-top: 20px;
+            background: var(--accent-terracotta); border: none;
+            color: white; text-transform: uppercase; letter-spacing: 2px;
+            font-weight: 600; cursor: pointer; transition: 0.3s;
+            border-radius: 4px;
+        }
+
+        button:hover { filter: brightness(1.1); }
+
+        .secondary-btn {
+            background: transparent;
+            color: var(--accent-terracotta);
+            border: 1px solid var(--accent-terracotta);
+            margin-top: 10px;
+        }
+
+        #forum-interface {
+            display: none;
+            max-width: 700px; margin: 0 auto;
+            padding: 20px; height: 100vh; flex-direction: column;
+        }
+
+        #postsContainer {
+            flex-grow: 1;
+            overflow-y: auto; display: flex;
+            flex-direction: column; padding: 10px; gap: 12px;
+        }
+
+        .post {
+            background: var(--bubble-bg);
+            padding: 12px 16px;
+            border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            max-width: 85%; align-self: flex-start;
+            position: relative; border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .user-tag { color: var(--accent-terracotta); font-size: 0.8em; font-weight: 800; display: block; margin-bottom: 4px; }
+        .post-date { font-size: 0.7em; opacity: 0.5; text-align: right; display: block; margin-top: 5px; }
+
+        .content-card {
+            background: var(--panel-beige);
+            padding: 15px; border-radius: 15px;
+            margin-top: 15px; border: 1px solid rgba(188, 108, 37, 0.2);
+            position: sticky; bottom: 20px;
+        }
+
+        .top-btn {
+            background: rgba(188, 108, 37, 0.1);
+            border: 1px solid var(--accent-terracotta);
+            color: var(--accent-terracotta); padding: 6px 12px; font-size: 0.75em;
+            width: auto; margin: 0; cursor: pointer; border-radius: 4px;
+        }
+
+        .header-chat {
+            display: flex;
+            justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 20px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: var(--bg-ivory);
+            margin: 10% auto;
+            padding: 30px; border-radius: 12px; width: 300px;
+            border: 2px solid var(--accent-terracotta); text-align: center;
+        }
+
+        .member-list { list-style: none; padding: 0; margin-top: 20px; text-align: left; }
+        .member-list li { padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05); color: var(--accent-terracotta); font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <div id="membersModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: var(--accent-terracotta); margin-top: 0;">MIEMBROS ACTIVOS</h3>
+            <ul id="memberListItems" class="member-list"></ul>
+            <button onclick="closeMembers()" class="top-btn" style="width: 100%; margin-top: 20px;">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="entry-page">
+        <div class="auth-card">
+            <div class="logo-box">ELITE</div>
+            <h2 id="auth-title">MEMBERSHIP</h2>
+            
+            <div id="reg-form">
+                <input type="text" id="fullName" placeholder="Nombre Completo">
+                <input type="text" id="userName" placeholder="Nombre de Usuario">
+                <input type="email" id="email" placeholder="Correo Electrónico">
+                <input type="password" id="regPassword" placeholder="Crear Contraseña" onkeypress="handleAuthEnter(event, 'register')">
+                <button onclick="register()">Registrar e Ingresar</button>
+                <button class="secondary-btn" onclick="toggleAuthForms('login')">Ya tengo cuenta | Acceder</button>
+            </div>
+
+            <div id="login-form" style="display: none;">
+                <p id="welcome-msg" style="margin-bottom: 15px; font-weight: 600;"></p>
+                <input type="text" id="loginUser" placeholder="Nombre de Usuario">
+                <input type="password" id="loginPassword" placeholder="Contraseña" onkeypress="handleAuthEnter(event, 'login')">
+                <button onclick="login()">Acceder al Foro</button>
+                <button class="secondary-btn" onclick="toggleAuthForms('register')">Nuevo Socio | Registrarse</button>
+            </div>
+
+            <div id="qr-container" style="margin-top: 30px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 20px;">
+                <div id="qrcode" style="background: white; padding: 10px; display: inline-block; border-radius: 4px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="forum-interface">
+        <div class="header-chat">
+            <div class="logo-box" style="font-size: 16px; margin-bottom: 0; padding: 5px 15px;">ELITE</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="top-btn" onclick="openMembers()">Miembros</button>
+                <div id="sessionInfo" style="font-size: 0.85em; font-weight: 700; color: var(--accent-terracotta);"></div>
+                <button class="top-btn" style="background: #BC6C25; color: white;" onclick="logout()">Salir</button>
+            </div>
+        </div>
+        
+        <div id="postsContainer"></div>
+
+        <div class="content-card">
+            <textarea id="postText" rows="1" placeholder="Escribe un mensaje..." onkeypress="handlePostEnter(event)"></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <input type="file" id="file-upload" style="width: auto; border: none; background: none; font-size: 0.75em; padding: 0;">
+                <button onclick="publish()" style="width: auto; padding: 8px 20px; margin: 0; font-size: 0.8em;">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let posts = JSON.parse(localStorage.getItem('elite_posts')) || [];
+    let users = JSON.parse(localStorage.getItem('elite_users_list')) || [];
+    let currentUser = null;
+
+    window.onload = function() {
+        // Asegúrate de tener conexión a internet para que se cargue la librería del QR
+        new QRCode(document.getElementById("qrcode"), {
+            text: "https://github.com/Mairely-coder/PROYECTO-DE-DESAROLLO-LLO-WED-.git", 
+            width: 80,
+            height: 80,
+            colorDark: "#283618", 
+            colorLight: "#ffffff"
+        });
+    }
+
+    function toggleAuthForms(target) {
+        if (target === 'login') {
+            document.getElementById('reg-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('auth-title').innerText = "BIENVENIDO";
+        } else {
+            document.getElementById('reg-form').style.display = 'block';
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('auth-title').innerText = "MEMBERSHIP";
+        }
+    }
+
+    function handleAuthEnter(event, type) {
+        if (event.key === "Enter") { type === 'register' ? register() : login(); }
+    }
+
+    function handlePostEnter(event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            publish();
+        }
+    }
+
+    function register() {
+        const full = document.getElementById('fullName').value;
+        const user = document.getElementById('userName').value;
+        const pass = document.getElementById('regPassword').value;
+        
+        if (!full || !user || !pass) return alert("Completa los campos.");
+        if (users.find(u => u.username === user)) return alert("El usuario ya existe.");
+        const newUser = { name: full, username: user, password: pass };
+        users.push(newUser);
+        localStorage.setItem('elite_users_list', JSON.stringify(users));
+        
+        currentUser = newUser;
+        enterForum(newUser);
+    }
+
+    function login() {
+        const userInput = document.getElementById('loginUser').value;
+        const passInput = document.getElementById('loginPassword').value;
+        
+        const found = users.find(u => u.username === userInput && u.password === passInput);
+        if (found) {
+            currentUser = found;
+            enterForum(found);
+        } else {
+            alert("Usuario o contraseña incorrectos.");
+        }
+    }
+
+    function logout() {
+        if(confirm("¿Cerrar sesión?")) {
+            document.getElementById('forum-interface').style.display = 'none';
+            document.getElementById('entry-page').style.display = 'flex';
+            document.getElementById('entry-page').style.opacity = '1';
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPassword').value = '';
+            currentUser = null;
+            toggleAuthForms('login');
+        }
+    }
+
+    function enterForum(user) {
+        document.getElementById('entry-page').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('entry-page').style.display = 'none';
+            document.getElementById('forum-interface').style.display = 'flex';
+            document.getElementById('sessionInfo').innerText = `@${user.username}`;
+            renderPosts();
+        }, 500);
+    }
+
+    function openMembers() {
+        const list = document.getElementById('memberListItems');
+        list.innerHTML = '';
+        users.forEach(u => {
+            list.innerHTML += `<li>👤 @${u.username} ${u.username === currentUser?.username ? '(Tú)' : ''}</li>`;
+        });
+        document.getElementById('membersModal').style.display = 'block';
+    }
+
+    function closeMembers() {
+        document.getElementById('membersModal').style.display = 'none';
+    }
+
+    function publish() {
+        const text = document.getElementById('postText').value.trim();
+        const fileInput = document.getElementById('file-upload');
+        const file = fileInput.files[0];
+        if (!text && !file) return;
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => savePost(text, e.target.result, file.type, file.name, currentUser.username);
+            reader.readAsDataURL(file);
+        } else {
+            savePost(text, null, null, null, currentUser.username);
+        }
+    }
+
+    function savePost(text, fileData, fileType, fileName, username) {
+        const newPost = { 
+            author: username, content: text, file: fileData, fileType: fileType, 
+            fileName: fileName, date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+        };
+        posts.push(newPost);
+        localStorage.setItem('elite_posts', JSON.stringify(posts));
+        document.getElementById('postText').value = '';
+        document.getElementById('file-upload').value = '';
+        renderPosts();
+    }
+
+    function renderPosts() {
+        const container = document.getElementById('postsContainer');
+        container.innerHTML = '';
+        posts.forEach(p => {
+            let media = p.file ? (p.fileType.startsWith('image/') ? `<img src="${p.file}" style="max-width:100%; border-radius:8px; margin-top:8px;">` : `<a href="${p.file}" download="${p.fileName}" style="color:var(--accent-terracotta); display:block; margin-top:8px; font-size: 0.8em;">📁 ${p.fileName}</a>`) : '';
+            container.innerHTML += `<div class="post"><span class="user-tag">@${p.author}</span><p>${p.content}</p>${media}<span class="post-date">${p.date}</span></div>`;
+        });
+        container.scrollTop = container.scrollHeight;
+    }
+</script>
+</body>
+</html>
