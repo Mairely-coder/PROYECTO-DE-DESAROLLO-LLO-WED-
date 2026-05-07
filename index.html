@@ -309,8 +309,11 @@
         const text = document.getElementById('postText').value.trim();
         const fileInput = document.getElementById('file-upload');
         const file = fileInput.files[0];
+        
         if (!text && !file) return;
-        if (file) {
+
+        // LA LLAMADA VA AQUÍ ADENTRO:
+    window.enviarAlChat(currentUser.username, text);
             const reader = new FileReader();
             reader.onload = (e) => savePost(text, e.target.result, file.type, file.name, currentUser.username);
             reader.readAsDataURL(file);
@@ -341,5 +344,59 @@
         container.scrollTop = container.scrollHeight;
     }
 </script>
+<script type="module">
+        // 1. Pega aquí las importaciones
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // 2. Tu configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDaQ116CQKbsS6ZX6d2EhtOOYuSq5N6DyY",
+            authDomain: "mi-foro-comunidad-5d056.firebaseapp.com",
+            projectId: "mi-foro-comunidad-5d056",
+            storageBucket: "mi-foro-comunidad-5d056.firebasestorage.app",
+            messagingSenderId: "132382721467",
+            appId: "1:132382721467:web:0216fdbd11987bb1f4f09e",
+            measurementId: "G-C2LKCZQD5C",
+            databaseURL: "https://mi-foro-comunidad-5d056-default-rtdb.firebaseio.com/"
+        };
+
+        // 3. Inicializar
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Función para enviar mensajes a Firebase
+window.enviarAlChat = function(nombre, texto) {
+    const mensajesRef = ref(database, 'mensajes');
+    const nuevoMensajeRef = push(mensajesRef);
+    set(nuevoMensajeRef, {
+        usuario: nombre,
+        contenido: texto,
+        fecha: Date.now()
+    }).then(() => {
+        console.log("Mensaje enviado con éxito");
+    }).catch((error) => {
+        console.error("Error al enviar:", error);
+    });
+};
+
+onChildAdded(ref(database, 'mensajes'), (snapshot) => {
+    const mensaje = snapshot.val();
+    
+    // Solo agregamos si el mensaje no existe ya en el array local (evita duplicados)
+    const existe = posts.some(p => p.date === new Date(mensaje.fecha).toLocaleString() && p.content === mensaje.contenido);
+    
+    if (!existe) { 
+        posts.push({
+            author: mensaje.usuario,
+            content: mensaje.contenido,
+            date: new Date(mensaje.fecha).toLocaleString(),
+            file: null // Por ahora, para que no dé error con tu función renderPosts
+        });
+        renderPosts(); 
+    }
+});
+    </script>
+</body>
 </body>
 </html>
