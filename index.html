@@ -242,7 +242,7 @@
         }
     }
 
-    function register() {
+    window.register = function() {
         const full = document.getElementById('fullName').value;
         const user = document.getElementById('userName').value;
         const pass = document.getElementById('regPassword').value;
@@ -257,7 +257,7 @@
         enterForum(newUser);
     }
 
-    function login() {
+    window.login = function() {
         const userInput = document.getElementById('loginUser').value;
         const passInput = document.getElementById('loginPassword').value;
         
@@ -270,7 +270,7 @@
         }
     }
 
-    function logout() {
+    window.login = function() {
         if(confirm("¿Cerrar sesión?")) {
             document.getElementById('forum-interface').style.display = 'none';
             document.getElementById('entry-page').style.display = 'flex';
@@ -282,7 +282,7 @@
         }
     }
 
-    function enterForum(user) {
+    window.register = function() {
         document.getElementById('entry-page').style.opacity = '0';
         setTimeout(() => {
             document.getElementById('entry-page').style.display = 'none';
@@ -305,7 +305,7 @@
         document.getElementById('membersModal').style.display = 'none';
     }
 
-    function publish() {
+    window.publish = function() {
         const text = document.getElementById('postText').value.trim();
         const fileInput = document.getElementById('file-upload');
         const file = fileInput.files[0];
