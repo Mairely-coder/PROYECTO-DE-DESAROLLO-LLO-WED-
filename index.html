@@ -13,7 +13,7 @@
             --text-dark: #283618;
             --input-bg: #FFFFFF;
             --bubble-bg: #ffffff;
-            --aluminum-grey: #A9ACB6; /* Color Gris Aluminio solicitado */
+            --aluminum-grey: #A9ACB6; 
         }
 
         body, html {
@@ -21,14 +21,9 @@
             padding: 0;
             font-family: 'Inter', 'Segoe UI', sans-serif;
             height: 100%;
-            /* Se cambió el fondo al color Gris Aluminio solicitado */
             background: var(--aluminum-grey); 
             color: var(--text-dark);
         }
-
-        /* Si prefieres mantener el degradado pero con el gris, usa esta línea en su lugar:
-           background: linear-gradient(-45deg, #A9ACB6, #F2E8CF, #D1D4D9, #FEFAE0); 
-        */
 
         .logo-box {
             border: 2px solid var(--accent-terracotta);
@@ -169,7 +164,6 @@
             </div>
 
             <div id="login-form" style="display: none;">
-                <p id="welcome-msg" style="margin-bottom: 15px; font-weight: 600;"></p>
                 <input type="text" id="loginUser" placeholder="Nombre de Usuario">
                 <input type="password" id="loginPassword" placeholder="Contraseña" onkeypress="handleAuthEnter(event, 'login')">
                 <button onclick="login()">Acceder al Foro</button>
@@ -204,14 +198,14 @@
     </div>
 
 <script>
+    // Variables Globales
     let posts = JSON.parse(localStorage.getItem('elite_posts')) || [];
     let users = JSON.parse(localStorage.getItem('elite_users_list')) || [];
     let currentUser = null;
 
     window.onload = function() {
-        // Asegúrate de tener conexión a internet para que se cargue la librería del QR
         new QRCode(document.getElementById("qrcode"), {
-            text: "https://github.com/Mairely-coder/PROYECTO-DE-DESAROLLO-LLO-WED-.git", 
+            text: "https://mairely-coder.github.io/PROYECTO-DE-DESAROLLO-LLO-WED-/", 
             width: 80,
             height: 80,
             colorDark: "#283618", 
@@ -219,7 +213,8 @@
         });
     }
 
-    function toggleAuthForms(target) {
+    // Funciones de Navegación Globales
+    window.toggleAuthForms = function(target) {
         if (target === 'login') {
             document.getElementById('reg-form').style.display = 'none';
             document.getElementById('login-form').style.display = 'block';
@@ -231,17 +226,28 @@
         }
     }
 
-    function handleAuthEnter(event, type) {
+    function enterForum(user) {
+        document.getElementById('entry-page').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('entry-page').style.display = 'none';
+            document.getElementById('forum-interface').style.display = 'flex';
+            document.getElementById('sessionInfo').innerText = `@${user.username}`;
+            renderPosts();
+        }, 500);
+    }
+
+    window.handleAuthEnter = function(event, type) {
         if (event.key === "Enter") { type === 'register' ? register() : login(); }
     }
 
-    function handlePostEnter(event) {
+    window.handlePostEnter = function(event) {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
             publish();
         }
     }
 
+    // Lógica de Autenticación
     window.register = function() {
         const full = document.getElementById('fullName').value;
         const user = document.getElementById('userName').value;
@@ -249,6 +255,7 @@
         
         if (!full || !user || !pass) return alert("Completa los campos.");
         if (users.find(u => u.username === user)) return alert("El usuario ya existe.");
+        
         const newUser = { name: full, username: user, password: pass };
         users.push(newUser);
         localStorage.setItem('elite_users_list', JSON.stringify(users));
@@ -270,29 +277,14 @@
         }
     }
 
-    window.login = function() {
+    window.logout = function() {
         if(confirm("¿Cerrar sesión?")) {
-            document.getElementById('forum-interface').style.display = 'none';
-            document.getElementById('entry-page').style.display = 'flex';
-            document.getElementById('entry-page').style.opacity = '1';
-            document.getElementById('loginUser').value = '';
-            document.getElementById('loginPassword').value = '';
-            currentUser = null;
-            toggleAuthForms('login');
+            location.reload(); 
         }
     }
 
-    window.register = function() {
-        document.getElementById('entry-page').style.opacity = '0';
-        setTimeout(() => {
-            document.getElementById('entry-page').style.display = 'none';
-            document.getElementById('forum-interface').style.display = 'flex';
-            document.getElementById('sessionInfo').innerText = `@${user.username}`;
-            renderPosts();
-        }, 500);
-    }
-
-    function openMembers() {
+    // Miembros
+    window.openMembers = function() {
         const list = document.getElementById('memberListItems');
         list.innerHTML = '';
         users.forEach(u => {
@@ -301,10 +293,11 @@
         document.getElementById('membersModal').style.display = 'block';
     }
 
-    function closeMembers() {
+    window.closeMembers = function() {
         document.getElementById('membersModal').style.display = 'none';
     }
 
+    // Lógica de Mensajes
     window.publish = function() {
         const text = document.getElementById('postText').value.trim();
         const fileInput = document.getElementById('file-upload');
@@ -312,8 +305,12 @@
         
         if (!text && !file) return;
 
-        // LA LLAMADA VA AQUÍ ADENTRO:
-    window.enviarAlChat(currentUser.username, text);
+        // Enviar a Firebase
+        if (window.enviarAlChat && currentUser) {
+            window.enviarAlChat(currentUser.username, text);
+        }
+
+        if (file) {
             const reader = new FileReader();
             reader.onload = (e) => savePost(text, e.target.result, file.type, file.name, currentUser.username);
             reader.readAsDataURL(file);
@@ -327,14 +324,12 @@
             author: username, content: text, file: fileData, fileType: fileType, 
             fileName: fileName, date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
         };
-        posts.push(newPost);
-        localStorage.setItem('elite_posts', JSON.stringify(posts));
+        // Guardamos localmente solo para referencia inmediata
         document.getElementById('postText').value = '';
         document.getElementById('file-upload').value = '';
-        renderPosts();
     }
 
-    function renderPosts() {
+    window.renderPosts = function() {
         const container = document.getElementById('postsContainer');
         container.innerHTML = '';
         posts.forEach(p => {
@@ -344,58 +339,54 @@
         container.scrollTop = container.scrollHeight;
     }
 </script>
+
 <script type="module">
-        // 1. Pega aquí las importaciones
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, push, set, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, set, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // 2. Tu configuración de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDaQ116CQKbsS6ZX6d2EhtOOYuSq5N6DyY",
-            authDomain: "mi-foro-comunidad-5d056.firebaseapp.com",
-            projectId: "mi-foro-comunidad-5d056",
-            storageBucket: "mi-foro-comunidad-5d056.firebasestorage.app",
-            messagingSenderId: "132382721467",
-            appId: "1:132382721467:web:0216fdbd11987bb1f4f09e",
-            measurementId: "G-C2LKCZQD5C",
-            databaseURL: "https://mi-foro-comunidad-5d056-default-rtdb.firebaseio.com/"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyDaQ116CQKbsS6ZX6d2EhtOOYuSq5N6DyY",
+        authDomain: "mi-foro-comunidad-5d056.firebaseapp.com",
+        projectId: "mi-foro-comunidad-5d056",
+        storageBucket: "mi-foro-comunidad-5d056.firebasestorage.app",
+        messagingSenderId: "132382721467",
+        appId: "1:132382721467:web:0216fdbd11987bb1f4f09e",
+        measurementId: "G-C2LKCZQD5C",
+        databaseURL: "https://mi-foro-comunidad-5d056-default-rtdb.firebaseio.com/"
+    };
 
-        // 3. Inicializar
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
 
-        // Función para enviar mensajes a Firebase
-window.enviarAlChat = function(nombre, texto) {
-    const mensajesRef = ref(database, 'mensajes');
-    const nuevoMensajeRef = push(mensajesRef);
-    set(nuevoMensajeRef, {
-        usuario: nombre,
-        contenido: texto,
-        fecha: Date.now()
-    }).then(() => {
-        console.log("Mensaje enviado con éxito");
-    }).catch((error) => {
-        console.error("Error al enviar:", error);
-    });
-};
-
-onChildAdded(ref(database, 'mensajes'), (snapshot) => {
-    const mensaje = snapshot.val();
-    
-    // Solo agregamos si el mensaje no existe ya en el array local (evita duplicados)
-    const existe = posts.some(p => p.date === new Date(mensaje.fecha).toLocaleString() && p.content === mensaje.contenido);
-    
-    if (!existe) { 
-        posts.push({
-            author: mensaje.usuario,
-            content: mensaje.contenido,
-            date: new Date(mensaje.fecha).toLocaleString(),
-            file: null // Por ahora, para que no dé error con tu función renderPosts
+    // Conexión Global para que window.publish pueda usarla
+    window.enviarAlChat = function(nombre, texto) {
+        const mensajesRef = ref(database, 'mensajes');
+        const nuevoMensajeRef = push(mensajesRef);
+        set(nuevoMensajeRef, {
+            usuario: nombre,
+            contenido: texto,
+            fecha: Date.now()
         });
-        renderPosts(); 
-    }
-});
-    </script>
+    };
+
+    // Escuchar mensajes en tiempo real
+    onChildAdded(ref(database, 'mensajes'), (snapshot) => {
+        const mensaje = snapshot.val();
+        
+        // Evitar duplicados
+        const existe = posts.some(p => p.content === mensaje.contenido && p.author === mensaje.usuario && Math.abs(p.timestamp - mensaje.fecha) < 1000);
+        
+        if (!existe) { 
+            posts.push({
+                author: mensaje.usuario,
+                content: mensaje.contenido,
+                date: new Date(mensaje.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timestamp: mensaje.fecha,
+                file: null 
+            });
+            renderPosts(); 
+        }
+    });
+</script>
 </body>
 </html>
