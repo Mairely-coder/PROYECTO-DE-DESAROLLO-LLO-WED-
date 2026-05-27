@@ -198,8 +198,7 @@
     </div>
 
 <script>
-    // Variables Globales
-    let posts = JSON.parse(localStorage.getItem('elite_posts')) || [];
+    // Variables Globales de Cuentas
     let users = JSON.parse(localStorage.getItem('elite_users_list')) || [];
     let currentUser = null;
 
@@ -232,7 +231,6 @@
             document.getElementById('entry-page').style.display = 'none';
             document.getElementById('forum-interface').style.display = 'flex';
             document.getElementById('sessionInfo').innerText = `@${user.username}`;
-            renderPosts();
         }, 500);
     }
 
@@ -297,7 +295,7 @@
         document.getElementById('membersModal').style.display = 'none';
     }
 
-    // Lógica de Mensajes
+    // Lógica de Mensajes (Envío)
     window.publish = function() {
         const text = document.getElementById('postText').value.trim();
         const fileInput = document.getElementById('file-upload');
@@ -305,38 +303,22 @@
         
         if (!text && !file) return;
 
-        // Enviar a Firebase
-        if (window.enviarAlChat && currentUser) {
-            window.enviarAlChat(currentUser.username, text);
-        }
-
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e) => savePost(text, e.target.result, file.type, file.name, currentUser.username);
+            reader.onload = (e) => {
+                if (window.enviarAlChat && currentUser) {
+                    window.enviarAlChat(currentUser.username, text, e.target.result, file.type, file.name);
+                }
+            };
             reader.readAsDataURL(file);
         } else {
-            savePost(text, null, null, null, currentUser.username);
+            if (window.enviarAlChat && currentUser) {
+                window.enviarAlChat(currentUser.username, text, null, null, null);
+            }
         }
-    }
 
-    function savePost(text, fileData, fileType, fileName, username) {
-        const newPost = { 
-            author: username, content: text, file: fileData, fileType: fileType, 
-            fileName: fileName, date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-        };
-        // Guardamos localmente solo para referencia inmediata
         document.getElementById('postText').value = '';
-        document.getElementById('file-upload').value = '';
-    }
-
-    window.renderPosts = function() {
-        const container = document.getElementById('postsContainer');
-        container.innerHTML = '';
-        posts.forEach(p => {
-            let media = p.file ? (p.fileType.startsWith('image/') ? `<img src="${p.file}" style="max-width:100%; border-radius:8px; margin-top:8px;">` : `<a href="${p.file}" download="${p.fileName}" style="color:var(--accent-terracotta); display:block; margin-top:8px; font-size: 0.8em;">📁 ${p.fileName}</a>`) : '';
-            container.innerHTML += `<div class="post"><span class="user-tag">@${p.author}</span><p>${p.content}</p>${media}<span class="post-date">${p.date}</span></div>`;
-        });
-        container.scrollTop = container.scrollHeight;
+        fileInput.value = '';
     }
 </script>
 
@@ -358,34 +340,46 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    // Conexión Global para que window.publish pueda usarla
-    window.enviarAlChat = function(nombre, texto) {
+    // Conexión para enviar a Firebase
+    window.enviarAlChat = function(nombre, texto, fileData, fileType, fileName) {
         const mensajesRef = ref(database, 'mensajes');
         const nuevoMensajeRef = push(mensajesRef);
         set(nuevoMensajeRef, {
             usuario: nombre,
             contenido: texto,
+            file: fileData,
+            fileType: fileType,
+            fileName: fileName,
             fecha: Date.now()
         });
     };
 
-    // Escuchar mensajes en tiempo real
+    // Escuchar cambios en tiempo real e inyectar al contenedor
+    const container = document.getElementById('postsContainer');
+
     onChildAdded(ref(database, 'mensajes'), (snapshot) => {
         const mensaje = snapshot.val();
+        const horaFormateada = new Date(mensaje.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        // Evitar duplicados
-        const existe = posts.some(p => p.content === mensaje.contenido && p.author === mensaje.usuario && Math.abs(p.timestamp - mensaje.fecha) < 1000);
-        
-        if (!existe) { 
-            posts.push({
-                author: mensaje.usuario,
-                content: mensaje.contenido,
-                date: new Date(mensaje.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                timestamp: mensaje.fecha,
-                file: null 
-            });
-            renderPosts(); 
+        let media = '';
+        if (mensaje.file) {
+            if (mensaje.fileType && mensaje.fileType.startsWith('image/')) {
+                media = `<img src="${mensaje.file}" style="max-width:100%; border-radius:8px; margin-top:8px;">`;
+            } else {
+                media = `<a href="${mensaje.file}" download="${mensaje.fileName}" style="color:var(--accent-terracotta); display:block; margin-top:8px; font-size: 0.8em;">📁 ${mensaje.fileName}</a>`;
+            }
         }
+
+        container.innerHTML += `
+            <div class="post">
+                <span class="user-tag">@${mensaje.usuario}</span>
+                <p>${mensaje.contenido || ''}</p>
+                ${media}
+                <span class="post-date">${horaFormateada}</span>
+            </div>
+        `;
+        
+        container.scrollTop = container.scrollHeight;
     });
 </script>
 </body>
